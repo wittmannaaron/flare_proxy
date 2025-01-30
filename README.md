@@ -1,4 +1,4 @@
-# FLARE-Proxy for AnythingLLM
+# FLARE-Proxy for AnythingLLM (and other RAG systems)
 
 This project implements a FLARE (Forward-Looking Active REtrieval) proxy for AnythingLLM. The proxy enhances the standard RAG (Retrieval Augmented Generation) process by dynamically retrieving additional context when the LLM's confidence falls below a certain threshold.
 
