@@ -37,7 +37,7 @@ async def chat_completions(request: Request):
 - Coordinates between LLM client and retrievers
 - Handles response generation with additional context
 
-Note: The current implementation uses OpenAI's text-embedding-3-large model for generating embeddings, which are then used by ChromaDB for vector similarity search. For future implementations with other databases (e.g., SQLite), this embedding generation functionality can be reused.
+Note: The implementation uses a configurable embedding model (defaulting to OpenAI's text-embedding-3-large) for generating embeddings, which are then used by ChromaDB for vector similarity search. For future implementations with other databases (e.g., SQLite), this embedding generation functionality can be reused.
 
 Key interfaces:
 ```python
@@ -76,23 +76,29 @@ class BaseRetriever(ABC):
 
 ## Development Roadmap
 
-1. Phase 1: Core Implementation
+1. Phase 1: Completed ✓
    - Set up project structure
    - Implement API layer
    - Basic FLARE processing
    - Chroma integration
-
-2. Phase 2: Enhanced Features
-   - Add SQLite retriever
-   - Implement streaming
-   - Add configuration management
+   - Streaming support
+   - Configuration management
    - Error handling
+   - Logging system
 
-3. Phase 3: Optimization
-   - Performance improvements
-   - Caching layer
+2. Phase 2: In Progress
+   - Complete confidence scoring implementation
+   - Add SQLite retriever
+   - Implement caching layer
+   - Add performance optimizations
+   - Enhance error recovery mechanisms
+
+3. Phase 3: Planned
+   - Multi-threading support
+   - Additional LLM providers
    - Advanced retrieval strategies
-   - Monitoring and logging
+   - Real-time monitoring dashboard
+   - Automated testing suite
 
 ## Getting Started
 
@@ -136,6 +142,10 @@ EMBEDDING_MODEL_PREF=text-embedding-3-large
 
 # Chroma Configuration
 CHROMA_ENDPOINT=http://localhost:1523  # AnythingLLM's ChromaDB endpoint
+EMBEDDING_MODEL_PREF=text-embedding-3-large  # Model to use for embeddings
+N_RESULTS=3        # Number of results to fetch per collection
+MAX_RESULTS=5      # Maximum total results to return
+DISTANCE_THRESHOLD=0.5  # Similarity threshold for filtering results
 
 # Proxy Settings
 PORT=3128  # Standard proxy port
@@ -256,12 +266,33 @@ The proxy implements comprehensive error handling:
 - Internal errors return 500 status codes with error messages
 - ChromaDB connection issues are handled gracefully with retries
 
+### Advanced Features
+
+1. Text Processing
+   - HTML/XML tag cleaning for better content extraction
+   - German character normalization support
+   - Intelligent whitespace handling
+   - JSON document parsing with fallback mechanisms
+
+2. Traffic Logging (Debug Mode)
+   - Complete request/response logging
+   - Component interaction tracking
+   - Detailed timing information
+   - Separate traffic.log file for analysis
+
+3. Confidence Scoring (In Development)
+   - Dynamic confidence threshold adjustment
+   - Multi-round retrieval optimization
+   - Response quality assessment
+   - Confidence-based context injection
+
 ### Limitations
 
 - Currently only supports Anthropic's Claude as the LLM provider
 - Requires AnythingLLM's ChromaDB to be accessible
 - No caching implementation yet
 - Single-threaded processing of requests
+- Confidence scoring system still under development
 
 ## Technical Details
 
