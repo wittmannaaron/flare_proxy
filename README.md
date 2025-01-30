@@ -1,14 +1,14 @@
 # FLARE-Proxy for AnythingLLM (and other RAG systems)
 
-This project implements a FLARE (Forward-Looking Active REtrieval) proxy for AnythingLLM. The proxy enhances the standard RAG (Retrieval Augmented Generation) process by dynamically retrieving additional context when the LLM's confidence falls below a certain threshold.
+This project implements a FLARE (Forward-Looking Active REtrieval) proxy that can be used with any RAG (Retrieval Augmented Generation) system supporting LM Studio as a backend. The proxy enhances the standard RAG process by dynamically retrieving additional context when the LLM's confidence falls below a certain threshold.
 
 ## Project Overview
 
-The FLARE-Proxy acts as an intermediary between AnythingLLM and the configured LLM service. It implements the OpenAI API specification to seamlessly integrate with AnythingLLM while adding FLARE capabilities to improve response quality.
+The FLARE-Proxy acts as an intermediary between RAG systems and the configured LLM service. It implements the LM Studio API specification, making it compatible with any RAG system that can use LM Studio as its backend (such as AnythingLLM). This universal compatibility allows the proxy to add FLARE capabilities to any supported RAG system, improving response quality through dynamic context retrieval.
 
 ### Key Features
 
-- Compatible with AnythingLLM's API expectations
+- Compatible with RAG systems supporting LM Studio backend
 - Implements FLARE algorithm for dynamic context retrieval
 - Modular architecture supporting multiple retrieval sources
 - Streaming support for real-time responses
@@ -20,10 +20,10 @@ The FLARE-Proxy acts as an intermediary between AnythingLLM and the configured L
 The implementation consists of four main components, each handling specific responsibilities:
 
 ### 1. API Layer (`main.py`)
-- FastAPI server implementing OpenAI's chat completions endpoint
+- FastAPI server implementing LM Studio compatible chat completions endpoint
 - Handles request/response formatting and error management
 - Manages environment configuration through .env file
-- Provides OpenAI-compatible interface for AnythingLLM integration
+- Provides standardized LM Studio compatible interface
 
 ```python
 @app.post("/v1/chat/completions")
@@ -37,7 +37,13 @@ async def chat_completions(request: Request):
 - Coordinates between LLM client and retrievers
 - Handles response generation with additional context
 
-Note: The implementation uses a configurable embedding model (defaulting to OpenAI's text-embedding-3-large) for generating embeddings, which are then used by ChromaDB for vector similarity search. For future implementations with other databases (e.g., SQLite), this embedding generation functionality can be reused.
+Note: The implementation uses a configurable embedding model (defaulting to OpenAI's text-embedding-3-large) for generating embeddings, which are then used by ChromaDB for vector similarity search. The choice of embedding model must match the model used to create the vector database, as mixing different embedding models would lead to incompatible vector representations and poor search results. When selecting an embedding model, consider:
+- Compatibility with existing vector database embeddings
+- Vector dimensions and format requirements
+- Cost and rate limits for hosted models
+- Storage requirements based on vector size and document volume
+
+For future implementations with other databases (e.g., SQLite), this embedding generation functionality can be reused, but the same principle applies: the embedding model must match the one used to create the vector representations in the database.
 
 Key interfaces:
 ```python
@@ -59,7 +65,7 @@ class BaseRetriever(ABC):
 ```
 
 #### Implemented Retrievers
-- ChromaRetriever (`retrievers/chroma.py`): Interfaces with AnythingLLM's ChromaDB
+- ChromaRetriever (`retrievers/chroma.py`): Interfaces with ChromaDB vector database
   - Connects to ChromaDB endpoint
   - Generates embeddings using OpenAI's text-embedding-3-large model
   - Performs semantic search with configurable similarity thresholds
@@ -141,7 +147,7 @@ OPEN_AI_KEY=your-openai-key
 EMBEDDING_MODEL_PREF=text-embedding-3-large
 
 # Chroma Configuration
-CHROMA_ENDPOINT=http://localhost:1523  # AnythingLLM's ChromaDB endpoint
+CHROMA_ENDPOINT=http://localhost:1523  # ChromaDB endpoint
 EMBEDDING_MODEL_PREF=text-embedding-3-large  # Model to use for embeddings
 N_RESULTS=3        # Number of results to fetch per collection
 MAX_RESULTS=5      # Maximum total results to return
@@ -157,7 +163,7 @@ CONFIDENCE_THRESHOLD=0.7  # Threshold for additional context retrieval
 MAX_RETRIEVAL_ROUNDS=3   # Maximum number of retrieval attempts
 ```
 
-Note: The proxy uses OpenAI's text-embedding-3-large model for generating embeddings to match AnythingLLM's vector search capabilities.
+Note: The proxy uses OpenAI's text-embedding-3-large model for generating embeddings for vector similarity search.
 
 ### Running the Proxy
 
@@ -216,13 +222,22 @@ The proxy validates the log directory specified in LOG_PATH during startup:
 - Verifies write permissions
 - Exits with an error if the directory cannot be accessed
 
-### Integration with AnythingLLM
+### Integration with RAG Systems
 
-To use the FLARE proxy with AnythingLLM, configure the following settings in AnythingLLM:
+The FLARE proxy can be integrated with any RAG system that supports LM Studio as a backend provider. Here's how to configure it:
 
-1. LLM Provider: Select "OpenAI" (The proxy implements OpenAI's API specification)
-2. Base URL: Set to `http://localhost:3128`
-3. API Key: Can be any value as authentication is handled by the proxy
+1. In your RAG system's settings, select "LM Studio" as the LLM provider
+2. Set the Base URL to `http://localhost:3128`
+3. Set any value for the API Key as authentication is handled by the proxy
+
+Example for AnythingLLM:
+```
+LLM Provider: LM Studio
+Base URL: http://localhost:3128
+API Key: [any value]
+```
+
+The proxy's implementation of the LM Studio API specification ensures compatibility with various RAG systems, while adding FLARE capabilities for improved context retrieval and response quality.
 
 ### API Usage
 
@@ -289,7 +304,7 @@ The proxy implements comprehensive error handling:
 ### Limitations
 
 - Currently only supports Anthropic's Claude as the LLM provider
-- Requires AnythingLLM's ChromaDB to be accessible
+- Requires access to a ChromaDB instance for vector storage
 - No caching implementation yet
 - Single-threaded processing of requests
 - Confidence scoring system still under development
@@ -301,7 +316,7 @@ The proxy implements comprehensive error handling:
 The FLARE-Proxy implements sophisticated vector search through ChromaDB:
 
 1. Document Storage:
-   - AnythingLLM stores documents as embeddings in ChromaDB
+   - Documents are stored as embeddings in ChromaDB
    - Each document is converted into a high-dimensional vector representation (3072 dimensions)
    - Collections in ChromaDB organize documents by workspace
 
@@ -313,7 +328,7 @@ The FLARE-Proxy implements sophisticated vector search through ChromaDB:
      * Most relevant documents (top 3 per collection) are returned
 
 3. Integration Benefits:
-   - Consistent embeddings between AnythingLLM and FLARE-Proxy
+   - Consistent embeddings between RAG system and FLARE-Proxy
    - High-quality semantic search through modern embedding model
    - Efficient similarity search with configurable thresholds
    - Automatic handling of multiple collections
@@ -393,7 +408,7 @@ The FLARE-Proxy implements a sophisticated retrieval-augmented generation system
 ### Architecture and Data Flow
 
 1. Request Processing:
-   - Incoming requests are received through an OpenAI-compatible endpoint
+   - Incoming requests are received through a LM Studio compatible endpoint
    - Requests are validated and transformed into the internal message format
    - The FLARE engine coordinates the interaction between components
 
@@ -403,7 +418,7 @@ The FLARE-Proxy implements a sophisticated retrieval-augmented generation system
      * Query is sent to ChromaDB for context retrieval
      * Retrieved context is injected into the conversation
      * Process repeats until confidence threshold is met or max rounds reached
-   - Final response is formatted according to OpenAI API specification
+   - Final response is formatted according to LM Studio API specification
 
 3. Vector Search Integration:
    - Uses OpenAI's text-embedding-3-large for embedding generation
@@ -423,4 +438,4 @@ The FLARE-Proxy implements a sophisticated retrieval-augmented generation system
    - Graceful degradation when services are unavailable
    - Detailed error reporting for debugging
 
-This implementation provides a robust foundation for dynamic context retrieval while maintaining compatibility with existing AnythingLLM infrastructure.
+This implementation provides a robust foundation for dynamic context retrieval while maintaining compatibility with any RAG system that supports LM Studio as a backend.
